@@ -110,9 +110,9 @@ func Encode(w io.Writer, img image.Image, format Format) error {
 	return err
 }
 
-// Save saves the image to file with the specified filename.
-// The format is determined from the filename extension: "jpg" (or "jpeg"), "png", "gif", "tif" (or "tiff") and "bmp" are supported.
-func Save(img image.Image, filename string) (err error) {
+// FormatForExtension returns an image format for a given file extension.
+// Supported extensions are "jpg", "jpeg", "png", "tif", "tiff", "bmp", and "gif". The '.' in the extension string is optional.
+func FormatForExtension(extension string) (format Format, err error) {
 	formats := map[string]Format{
 		".jpg":  JPEG,
 		".jpeg": JPEG,
@@ -122,13 +122,24 @@ func Save(img image.Image, filename string) (err error) {
 		".bmp":  BMP,
 		".gif":  GIF,
 	}
-
-	ext := strings.ToLower(filepath.Ext(filename))
-	f, ok := formats[ext]
-	if !ok {
-		return ErrUnsupportedFormat
+	extension = strings.ToLower(extension)
+	if !strings.HasPrefix(extension, ".") {
+		extension = "." + extension
 	}
+	format, ok := formats[extension]
+	if !ok {
+		err = ErrUnsupportedFormat
+	}
+	return
+}
 
+// Save saves the image to file with the specified filename.
+// The format is determined from the filename extension: "jpg" (or "jpeg"), "png", "gif", "tif" (or "tiff") and "bmp" are supported.
+func Save(img image.Image, filename string) (err error) {
+	format, err := FormatForExtension(filepath.Ext(filename))
+	if err != nil {
+		return err
+	}
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
